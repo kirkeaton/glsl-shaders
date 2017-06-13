@@ -2,7 +2,7 @@ GLSL Shaders
 ============
 
 ### Description
-Three shaders (Gouraud, Phong, and Blinn-Phong) writting in the OpenGL Shading Language. Completed for the course "CIS*4800 - Computer Graphics" during the Winter '14 semester.
+Three shaders (Gouraud, Phong, and Blinn-Phong) writting in the OpenGL Shading Language.
 
 ### Usage
 To learn how to use the following shaders, please read the tutorial found at, [Lighthouse 3D](http://www.lighthouse3d.com/tutorials/glsl-tutorial/)
