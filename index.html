@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GLSL Shader Demo</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #0f172a;
+        color: #f8fafc;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+      }
+      .panel {
+        width: min(92vw, 960px);
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 16px;
+        padding: 1rem 1.25rem 1.25rem;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      }
+      canvas {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+        display: block;
+        background: radial-gradient(circle at top, #1e293b, #020617 70%);
+      }
+      .toolbar {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      }
+      select {
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid #475569;
+        background: #0f172a;
+        color: #f8fafc;
+      }
+      p {
+        margin: 0.25rem 0 0;
+        color: #cbd5e1;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <div class="toolbar">
+        <label for="shaderSelect">Lighting model</label>
+        <select id="shaderSelect">
+          <option value="gour">Gouraud</option>
+          <option value="phong">Phong</option>
+          <option value="blinn">Blinn-Phong</option>
+        </select>
+      </div>
+      <canvas id="glCanvas" width="960" height="540"></canvas>
+      <p>The original project used old fixed-function GLSL. This version runs in a modern browser and preserves the same three lighting styles.</p>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>
