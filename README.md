@@ -4,9 +4,15 @@
 
 Three shaders (Gouraud, Phong, and Blinn-Phong) written in the OpenGL Shading Language.
 
-## Usage
+## Running this project
 
-To learn how to use the following shaders, please read the tutorial found at, [Lighthouse 3D](http://www.lighthouse3d.com/tutorials/glsl-tutorial/)
+The original project used fixed-function OpenGL shader syntax, which is no longer practical to run directly on modern systems. I set up a lightweight browser-based version so you can view the three lighting models again without needing legacy OpenGL tools.
+
+1. Open a terminal in this folder.
+2. Start a local web server:
+   `npx serve`
+3. Open http://localhost:3000 in your browser.
+4. Use the dropdown to switch between Gouraud, Phong, and Blinn-Phong.
 
 ## Illumination Equation
 

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GLSL Shader Demo</title>
+    <style>
+      .panel {
+        width: min(92vw, 960px);
+      }
+      canvas {
+        width: 100%;
+        margin: 0.5rem 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <div class="toolbar">
+        <label for="shaderSelect">Lighting model</label>
+        <select id="shaderSelect">
+          <option value="gour">Gouraud</option>
+          <option value="phong">Phong</option>
+          <option value="blinn">Blinn-Phong</option>
+        </select>
+      </div>
+      <canvas id="glCanvas" width="960" height="540"></canvas>
+      The original project used fixed-function GLSL. This version runs in a
+      modern browser and preserves the same three lighting styles.
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>
