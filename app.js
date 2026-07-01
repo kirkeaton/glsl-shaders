@@ -8,16 +8,16 @@ function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
   canvas.width = Math.round(rect.width * ratio);
   canvas.height = Math.round(rect.height * ratio);
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 function shade(baseColor, normal, lightDir, viewDir, kind) {
-  const ambient = 0.2;
+  const ambient = 0.18;
   const diffuse = Math.max(dot(normal, lightDir), 0.0);
   const specular = kind === 'blinn'
-    ? Math.pow(Math.max(dot(normal, normalize(add(lightDir, viewDir))), 0.0), 32.0)
-    : Math.pow(Math.max(dot(reflect(negate(lightDir), normal), viewDir), 0.0), 32.0);
-  const intensity = ambient + diffuse * 0.8 + specular * 0.5;
+    ? Math.pow(Math.max(dot(normal, normalize(add(lightDir, viewDir))), 0.0), 48.0)
+    : Math.pow(Math.max(dot(reflect(negate(lightDir), normal), viewDir), 0.0), 48.0);
+  const intensity = ambient + diffuse * 0.9 + specular * 0.7;
   return `rgb(${Math.round(baseColor[0] * intensity)}, ${Math.round(baseColor[1] * intensity)}, ${Math.round(baseColor[2] * intensity)})`;
 }
 
@@ -38,12 +38,20 @@ function normalize(v) {
   return [v[0] / length, v[1] / length, v[2] / length];
 }
 
+function subtract(a, b) {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+
+function cross(a, b) {
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}
+
 function reflect(i, n) {
   const dotValue = dot(i, n);
   return [i[0] - 2 * dotValue * n[0], i[1] - 2 * dotValue * n[1], i[2] - 2 * dotValue * n[2]];
 }
 
-function projectPoint(point, rotationY, rotationX, scale, offsetX, offsetY) {
+function rotatePoint(point, rotationY, rotationX) {
   let x = point[0];
   let y = point[1];
   let z = point[2];
@@ -58,59 +66,65 @@ function projectPoint(point, rotationY, rotationX, scale, offsetX, offsetY) {
   const rotatedY = y * cosX - rotatedZ * sinX;
   const finalZ = y * sinX + rotatedZ * cosX;
 
-  return {
-    x: offsetX + rotatedX * scale,
-    y: offsetY - rotatedY * scale,
-    z: finalZ,
-  };
+  return [rotatedX, rotatedY, finalZ];
 }
 
-function drawFace(points, color, normal, lightDir, viewDir, kind, rotationY, rotationX) {
-  const projected = points.map((point) => projectPoint(point, rotationY, rotationX, 140, canvas.clientWidth / 2, canvas.clientHeight / 2));
-  const fillStyle = shade(color, normal, lightDir, viewDir, kind);
-  ctx.beginPath();
-  ctx.moveTo(projected[0].x, projected[0].y);
-  projected.slice(1).forEach((p) => ctx.lineTo(p.x, p.y));
-  ctx.closePath();
-  ctx.fillStyle = fillStyle;
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-  ctx.stroke();
+function intersectSphere(origin, direction, radius) {
+  const b = dot(origin, direction);
+  const c = dot(origin, origin) - radius * radius;
+  const discriminant = b * b - c;
+
+  if (discriminant < 0) {
+    return null;
+  }
+
+  const t = -b - Math.sqrt(discriminant);
+  return t > 0.0001 ? [origin[0] + direction[0] * t, origin[1] + direction[1] * t, origin[2] + direction[2] * t] : null;
 }
 
 function drawScene(time) {
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  ctx.clearRect(0, 0, w, h);
+  const w = canvas.width;
+  const h = canvas.height;
+  const imageData = ctx.createImageData(w, h);
+  const data = imageData.data;
+  const cx = w / 2;
+  const cy = h / 2;
+  const radius = Math.min(w, h) * 0.22;
+  const lightDir = normalize([0.7, 0.8, 1.0]);
 
-  const gradient = ctx.createLinearGradient(0, 0, w, h);
-  gradient.addColorStop(0, '#0f172a');
-  gradient.addColorStop(1, '#1d4ed8');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
 
-  ctx.save();
-  ctx.translate(0, 0);
+      if (dist > radius) {
+        const idx = (y * w + x) * 4;
+        data[idx] = 10;
+        data[idx + 1] = 18;
+        data[idx + 2] = 40;
+        data[idx + 3] = 255;
+        continue;
+      }
+
+      const normal = normalize([dx / radius, dy / radius, Math.sqrt(Math.max(1 - (dx * dx + dy * dy) / (radius * radius), 0))]);
+      const baseColor = [90 + 70 * (0.5 + 0.5 * normal[0]), 120 + 60 * (0.5 + 0.5 * normal[1]), 220 + 30 * (0.5 + 0.5 * normal[2])];
+      const viewDir = normalize([0, 0, 1]);
+      const shaded = shade(baseColor, normal, lightDir, viewDir, mode);
+      const [r, g, b] = shaded.match(/\d+/g).map(Number);
+
+      const idx = (y * w + x) * 4;
+      data[idx] = r;
+      data[idx + 1] = g;
+      data[idx + 2] = b;
+      data[idx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
   ctx.font = '16px sans-serif';
-  ctx.fillStyle = 'rgba(248,250,252,0.8)';
+  ctx.fillStyle = 'rgba(248,250,252,0.85)';
   ctx.fillText(`Lighting model: ${mode}`, 18, 28);
-  ctx.restore();
-
-  const rotY = time * 0.6;
-  const rotX = 0.45 + Math.sin(time * 0.55) * 0.2;
-  const lightDir = normalize([0.6, 0.8, 1.0]);
-  const viewDir = normalize([0.0, 0.0, 1.0]);
-
-  const faces = [
-    { points: [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1]], normal: [0, 0, -1], color: [70, 130, 230] },
-    { points: [[-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]], normal: [0, 0, 1], color: [150, 90, 220] },
-    { points: [[-1, -1, -1], [-1, -1, 1], [-1, 1, 1], [-1, 1, -1]], normal: [-1, 0, 0], color: [35, 185, 120] },
-    { points: [[1, -1, -1], [1, -1, 1], [1, 1, 1], [1, 1, -1]], normal: [1, 0, 0], color: [220, 90, 70] },
-    { points: [[-1, -1, -1], [-1, -1, 1], [1, -1, 1], [1, -1, -1]], normal: [0, -1, 0], color: [240, 180, 60] },
-    { points: [[-1, 1, -1], [-1, 1, 1], [1, 1, 1], [1, 1, -1]], normal: [0, 1, 0], color: [170, 220, 90] },
-  ];
-
-  faces.forEach((face) => drawFace(face.points, face.color, face.normal, lightDir, viewDir, mode, rotY, rotX));
 }
 
 function render(now) {
