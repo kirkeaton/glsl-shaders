@@ -18,15 +18,18 @@ function resizeCanvas() {
 
 function shade(baseColor, normal, lightDir, viewDir, kind) {
   const ambient = 0.08;
-  const diffuse = Math.max(dot(normal, lightDir), 0.0);
+  const nDotL = Math.max(dot(normal, lightDir), 0.0);
+  const diffuse = nDotL;
 
   let specular = 0.0;
-  if (kind === 'phong') {
-    const reflected = reflect(negate(lightDir), normal);
-    specular = Math.pow(Math.max(dot(reflected, viewDir), 0.0), 64.0);
-  } else if (kind === 'blinn') {
-    const halfway = normalize(add(lightDir, viewDir));
-    specular = Math.pow(Math.max(dot(normal, halfway), 0.0), 96.0);
+  if (nDotL > 0.0) {
+    if (kind === 'phong') {
+      const reflected = reflect(negate(lightDir), normal);
+      specular = Math.pow(Math.max(dot(reflected, viewDir), 0.0), 64.0) * nDotL;
+    } else if (kind === 'blinn') {
+      const halfway = normalize(add(lightDir, viewDir));
+      specular = Math.pow(Math.max(dot(normal, halfway), 0.0), 96.0) * nDotL;
+    }
   }
 
   const intensity = ambient + diffuse * 0.95 + specular * (kind === 'blinn' ? 0.7 : 0.45);
