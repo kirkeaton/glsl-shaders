@@ -20,13 +20,13 @@ void main(void)
 {
     vec3 viewpoint = normalize(-vVertex);
     vec3 light = normalize(uLightPosition.xyz - vVertex);
-    vec3 reflection = normalize(-reflect(light, vNormal));
+    vec3 halfDirection = normalize(light + viewpoint);
     float distance = length(light);
 
     float fatt = 1.0 / (uLightConstantAttenuation + (distance * uLightLinearAttenuation) + (distance * distance * uLightQuadraticAttenuation));
     vec4 Ia = (uLightAmbient * uMaterialAmbient) + (uSceneColor * uMaterialAmbient);
     vec4 Id = uLightDiffuse * uMaterialDiffuse * max(dot(light, vNormal), 0.0);
-    vec4 Is = uLightSpecular * uMaterialSpecular * pow(max(dot(reflection, viewpoint), 0.0), 0.3 * uMaterialShininess);
+    vec4 Is = uLightSpecular * uMaterialSpecular * pow(max(dot(halfDirection, vNormal), 0.0), 0.3 * uMaterialShininess);
 
     gl_FragColor = uSceneColor + Ia + fatt * (Id + Is);
 }

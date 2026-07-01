@@ -1,19 +1,30 @@
-varying vec4 colour;
+precision mediump float;
+
+attribute vec3 aPosition;
+attribute vec3 aNormal;
+
+uniform mat4 uModelViewMatrix;
+uniform mat4 uModelViewProjectionMatrix;
+uniform mat3 uNormalMatrix;
+
+uniform vec4 uMaterialAmbient;
+uniform vec4 uMaterialDiffuse;
+uniform vec4 uLightAmbient;
+uniform vec4 uLightDiffuse;
+uniform vec4 uLightPosition;
+uniform vec4 uSceneColor;
+
+varying vec4 vColor;
 
 void main()
 {
-	vec3 normal = normalize(gl_NormalMatrix * gl_Normal);
-	vec3 vertex = vec3(gl_ModelViewMatrix * gl_Vertex);
-	vec3 viewpoint = normalize(-vertex);
-	vec3 light  = normalize(vec3(gl_LightSource[0].position.xyz - vertex));
-	vec3 reflection = normalize(-reflect(light, normal));
-	float distance = length(light);
+    vec3 normal = normalize(uNormalMatrix * aNormal);
+    vec3 vertex = vec3(uModelViewMatrix * vec4(aPosition, 1.0));
+    vec3 light = normalize(uLightPosition.xyz - vertex);
 
-	float fatt = 1.0 / (gl_LightSource[0].constantAttenuation + (distance*gl_LightSource[0].linearAttenuation) + (distance*distance*gl_LightSource[0].quadraticAttenuation));
-	vec4 Ia = (gl_LightSource[0].ambient * gl_FrontMaterial.ambient) + (gl_FrontLightModelProduct.sceneColor * gl_FrontMaterial.ambient);
-	vec4 Id = gl_LightSource[0].diffuse * gl_FrontMaterial.diffuse * max(dot(light, normal), 0.0);
-	vec4 Is = gl_LightSource[0].specular * gl_FrontMaterial.specular * pow(max(dot(reflection, viewpoint), 0.0), 0.3*gl_FrontMaterial.shininess);
-	
-	colour = vec4(gl_FrontLightModelProduct.sceneColor + Ia + fatt*(Id + Is));
-	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+    vec4 ambient = uLightAmbient * uMaterialAmbient + uSceneColor * uMaterialAmbient;
+    vec4 diffuse = uLightDiffuse * uMaterialDiffuse * max(dot(light, normal), 0.0);
+
+    vColor = ambient + diffuse;
+    gl_Position = uModelViewProjectionMatrix * vec4(aPosition, 1.0);
 }
