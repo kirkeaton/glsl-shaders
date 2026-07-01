@@ -2,6 +2,11 @@ const canvas = document.getElementById('glCanvas');
 const ctx = canvas.getContext('2d');
 const shaderSelect = document.getElementById('shaderSelect');
 let mode = 'gour';
+let rotationY = 0;
+let rotationX = 0.35;
+let dragging = false;
+let lastX = 0;
+let lastY = 0;
 
 function resizeCanvas() {
   const ratio = window.devicePixelRatio || 1;
@@ -12,13 +17,21 @@ function resizeCanvas() {
 }
 
 function shade(baseColor, normal, lightDir, viewDir, kind) {
-  const ambient = 0.18;
+  const ambient = 0.08;
   const diffuse = Math.max(dot(normal, lightDir), 0.0);
-  const specular = kind === 'blinn'
-    ? Math.pow(Math.max(dot(normal, normalize(add(lightDir, viewDir))), 0.0), 48.0)
-    : Math.pow(Math.max(dot(reflect(negate(lightDir), normal), viewDir), 0.0), 48.0);
-  const intensity = ambient + diffuse * 0.9 + specular * 0.7;
-  return `rgb(${Math.round(baseColor[0] * intensity)}, ${Math.round(baseColor[1] * intensity)}, ${Math.round(baseColor[2] * intensity)})`;
+
+  let specular = 0.0;
+  if (kind === 'phong') {
+    const reflected = reflect(negate(lightDir), normal);
+    specular = Math.pow(Math.max(dot(reflected, viewDir), 0.0), 64.0);
+  } else if (kind === 'blinn') {
+    const halfway = normalize(add(lightDir, viewDir));
+    specular = Math.pow(Math.max(dot(normal, halfway), 0.0), 96.0);
+  }
+
+  const intensity = ambient + diffuse * 0.95 + specular * (kind === 'blinn' ? 0.7 : 0.45);
+  const clamped = Math.max(0.0, Math.min(1.0, intensity));
+  return `rgb(${Math.round(baseColor[0] * clamped)}, ${Math.round(baseColor[1] * clamped)}, ${Math.round(baseColor[2] * clamped)})`;
 }
 
 function add(a, b) {
@@ -90,7 +103,9 @@ function drawScene(time) {
   const cx = w / 2;
   const cy = h / 2;
   const radius = Math.min(w, h) * 0.22;
-  const lightDir = normalize([0.7, 0.8, 1.0]);
+  const lightDirWorld = normalize([0.6, 0.4, 1.0]);
+  const spinY = rotationY + time * 0.35;
+  const spinX = rotationX;
 
   for (let y = 0; y < h; y += 1) {
     for (let x = 0; x < w; x += 1) {
@@ -107,8 +122,10 @@ function drawScene(time) {
         continue;
       }
 
-      const normal = normalize([dx / radius, dy / radius, Math.sqrt(Math.max(1 - (dx * dx + dy * dy) / (radius * radius), 0))]);
-      const baseColor = [90 + 70 * (0.5 + 0.5 * normal[0]), 120 + 60 * (0.5 + 0.5 * normal[1]), 220 + 30 * (0.5 + 0.5 * normal[2])];
+      const baseNormal = normalize([dx / radius, dy / radius, Math.sqrt(Math.max(1 - (dx * dx + dy * dy) / (radius * radius), 0))]);
+      const normal = rotatePoint(baseNormal, spinY, spinX);
+      const lightDir = lightDirWorld;
+      const baseColor = [180, 176, 205];
       const viewDir = normalize([0, 0, 1]);
       const shaded = shade(baseColor, normal, lightDir, viewDir, mode);
       const [r, g, b] = shaded.match(/\d+/g).map(Number);
@@ -136,6 +153,33 @@ function render(now) {
 shaderSelect.addEventListener('change', (event) => {
   mode = event.target.value;
 });
+
+canvas.addEventListener('pointerdown', (event) => {
+  dragging = true;
+  lastX = event.clientX;
+  lastY = event.clientY;
+  canvas.setPointerCapture(event.pointerId);
+});
+
+canvas.addEventListener('pointermove', (event) => {
+  if (!dragging) {
+    return;
+  }
+  const deltaX = event.clientX - lastX;
+  const deltaY = event.clientY - lastY;
+  rotationY += deltaX * 0.01;
+  rotationX = Math.max(-0.8, Math.min(0.8, rotationX + deltaY * 0.01));
+  lastX = event.clientX;
+  lastY = event.clientY;
+});
+
+canvas.addEventListener('pointerup', () => {
+  dragging = false;
+});
+canvas.addEventListener('pointerleave', () => {
+  dragging = false;
+});
+
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 requestAnimationFrame(render);
